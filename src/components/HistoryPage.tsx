@@ -9,12 +9,14 @@ interface HistoryPageProps {
   onSelectConversation: (conversationId: string) => void
   onStartNewConversation: () => void
   activeConversationId: string | null
+  jwt: string | null
 }
 
 export const HistoryPage: React.FC<HistoryPageProps> = ({
   onSelectConversation,
   onStartNewConversation,
   activeConversationId,
+  jwt,
 }) => {
   const [conversations, setConversations] = useState<ConversationItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,11 +24,20 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
+    if (!jwt) {
+      setLoading(false)
+      return
+    }
+
     const fetchConversations = async () => {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch('http://localhost:3000/conversations')
+        const response = await fetch('http://localhost:3000/conversations', {
+          headers: {
+            'Authorization': `Bearer ${jwt}`,
+          },
+        })
         if (!response.ok) {
           throw new Error(`Server returned status: ${response.status}`)
         }
@@ -41,7 +52,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     };
 
     fetchConversations()
-  }, [])
+  }, [jwt])
 
   // Helper to format date strings nicely
   const formatDate = (dateString: string) => {

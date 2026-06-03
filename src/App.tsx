@@ -27,15 +27,26 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState<'chat' | 'history'>('chat')
+  const [jwt, setJwt] = useState<string | null>(null)
 
   // 1. Initial Load: Retrieve persistent sessions
   useEffect(() => {
     const savedUser = localStorage.getItem('cura_user')
+    const savedJwt = localStorage.getItem('cura_jwt')
+
     if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (e) {
-        console.error('Failed to parse saved user credentials', e)
+      if (!savedJwt) {
+        // Clear orphaned session if JWT token is missing (e.g. from an older version of the app)
+        localStorage.removeItem('cura_user')
+        localStorage.removeItem('cura_current_conversation_id')
+        setUser(null)
+      } else {
+        try {
+          setUser(JSON.parse(savedUser))
+          setJwt(savedJwt)
+        } catch (e) {
+          console.error('Failed to parse saved user credentials', e)
+        }
       }
     }
 
@@ -49,13 +60,17 @@ function App() {
 
   // 2. Fetch conversation history when currentConversationId changes and user is logged in
   useEffect(() => {
-    if (!user || !currentConversationId) return
+    if (!user || !currentConversationId || !jwt) return
 
     const loadActiveConversation = async () => {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`http://localhost:3000/conversations/${currentConversationId}/`)
+        const response = await fetch(`http://localhost:3000/conversations/${currentConversationId}/`, {
+          headers: {
+            'Authorization': `Bearer ${jwt || ''}`,
+          },
+        })
         if (!response.ok) {
           throw new Error(`Server returned status: ${response.status}`)
         }
@@ -78,7 +93,7 @@ function App() {
     }
 
     loadActiveConversation()
-  }, [currentConversationId, user])
+  }, [currentConversationId, user, jwt])
 
   // Login flow events
   const handleLoginSuccess = (credentialResponse: any) => {
@@ -86,7 +101,9 @@ function App() {
       const decodedUser: UserProfile = jwtDecode(credentialResponse.credential!)
       console.log('Logged in successfully. User:', decodedUser)
       setUser(decodedUser)
+      setJwt(credentialResponse.credential!)
       localStorage.setItem('cura_user', JSON.stringify(decodedUser))
+      localStorage.setItem('cura_jwt', credentialResponse.credential!)
       setError(null)
     } catch (err) {
       console.error('Authentication decode error:', err)
@@ -101,9 +118,11 @@ function App() {
 
   const handleLogout = () => {
     setUser(null)
+    setJwt(null)
     setChatHistory([])
     setCurrentConversationId(null)
     localStorage.removeItem('cura_user')
+    localStorage.removeItem('cura_jwt')
     localStorage.removeItem('cura_current_conversation_id')
     setError(null)
     setCurrentPage('chat')
@@ -151,6 +170,7 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt || ''}`,
         },
         body: JSON.stringify({ input: queryText }),
       })
@@ -222,6 +242,7 @@ function App() {
               onSelectConversation={handleSelectConversation}
               onStartNewConversation={handleStartNewConversation}
               activeConversationId={currentConversationId}
+              jwt={jwt}
             />
           )}
         </main>
