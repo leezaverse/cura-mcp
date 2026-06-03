@@ -4,7 +4,20 @@ import type { UserProfile, ChatMessage } from './types'
 import { LoginScreen } from './components/LoginScreen'
 import { DashboardHeader } from './components/DashboardHeader'
 import { ChatWorkspace } from './components/ChatWorkspace'
+import { HistoryPage } from './components/HistoryPage'
 import './App.css'
+
+// Fallback UUID v4 generator
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
 
 function App() {
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -12,6 +25,8 @@ function App() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState<'chat' | 'history'>('chat')
 
   // 1. Initial Load: Retrieve persistent sessions
   useEffect(() => {
@@ -24,22 +39,46 @@ function App() {
       }
     }
 
-    const savedHistory = localStorage.getItem('cura_chat_history')
-    if (savedHistory) {
-      try {
-        setChatHistory(JSON.parse(savedHistory))
-      } catch (e) {
-        console.error('Failed to parse saved chat history', e)
-      }
+    let savedConversationId = localStorage.getItem('cura_current_conversation_id')
+    if (!savedConversationId) {
+      savedConversationId = generateUUID()
+      localStorage.setItem('cura_current_conversation_id', savedConversationId)
     }
+    setCurrentConversationId(savedConversationId)
   }, [])
 
-  // 2. Synchronize history to local storage
+  // 2. Fetch conversation history when currentConversationId changes and user is logged in
   useEffect(() => {
-    if (chatHistory.length > 0) {
-      localStorage.setItem('cura_chat_history', JSON.stringify(chatHistory))
+    if (!user || !currentConversationId) return
+
+    const loadActiveConversation = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await fetch(`http://localhost:3000/conversations/${currentConversationId}/`)
+        if (!response.ok) {
+          throw new Error(`Server returned status: ${response.status}`)
+        }
+        const data = await response.json()
+        
+        // Map postgres rows to ChatMessage
+        const mappedHistory: ChatMessage[] = data.map((item: any, index: number) => ({
+          id: `msg-${index}-${Date.now()}`,
+          prompt: item.input_text,
+          response: item.output_text,
+          timestamp: new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }))
+        setChatHistory(mappedHistory)
+      } catch (err: any) {
+        console.error('Failed to fetch conversation history:', err)
+        setError(`Could not fetch messages for this session: ${err.message}`)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [chatHistory])
+
+    loadActiveConversation()
+  }, [currentConversationId, user])
 
   // Login flow events
   const handleLoginSuccess = (credentialResponse: any) => {
@@ -63,8 +102,26 @@ function App() {
   const handleLogout = () => {
     setUser(null)
     setChatHistory([])
+    setCurrentConversationId(null)
     localStorage.removeItem('cura_user')
-    localStorage.removeItem('cura_chat_history')
+    localStorage.removeItem('cura_current_conversation_id')
+    setError(null)
+    setCurrentPage('chat')
+  }
+
+  const handleStartNewConversation = () => {
+    const newId = generateUUID()
+    setCurrentConversationId(newId)
+    localStorage.setItem('cura_current_conversation_id', newId)
+    setChatHistory([])
+    setCurrentPage('chat')
+    setError(null)
+  }
+
+  const handleSelectConversation = (conversationId: string) => {
+    setCurrentConversationId(conversationId)
+    localStorage.setItem('cura_current_conversation_id', conversationId)
+    setCurrentPage('chat')
     setError(null)
   }
 
@@ -73,7 +130,7 @@ function App() {
     e.preventDefault()
     
     const queryText = input.trim()
-    if (!queryText || loading) return
+    if (!queryText || loading || !currentConversationId) return
 
     setLoading(true)
     setError(null)
@@ -90,7 +147,7 @@ function App() {
     setChatHistory((prev) => [...prev, userMessage])
 
     try {
-      const response = await fetch('http://localhost:3000/chat', {
+      const response = await fetch(`http://localhost:3000/conversations/${currentConversationId}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -140,24 +197,35 @@ function App() {
         />
       ) : (
         <main className="dashboard">
-          <DashboardHeader user={user} onLogout={handleLogout} />
-          
-          <ChatWorkspace
-            user={user}
-            chatHistory={chatHistory}
-            input={input}
-            setInput={setInput}
-            loading={loading}
-            error={error}
-            setError={setError}
-            onSendPrompt={handleSendPrompt}
+          <DashboardHeader 
+            user={user} 
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            onLogout={handleLogout} 
           />
+          
+          {currentPage === 'chat' ? (
+            <ChatWorkspace
+              user={user}
+              chatHistory={chatHistory}
+              input={input}
+              setInput={setInput}
+              loading={loading}
+              error={error}
+              setError={setError}
+              onSendPrompt={handleSendPrompt}
+              activeConversationId={currentConversationId}
+              onStartNewConversation={handleStartNewConversation}
+            />
+          ) : (
+            <HistoryPage
+              onSelectConversation={handleSelectConversation}
+              onStartNewConversation={handleStartNewConversation}
+              activeConversationId={currentConversationId}
+            />
+          )}
         </main>
       )}
-
-      <footer className="footer-text">
-        Cura MCP Client Studio • Local Test Workspace
-      </footer>
     </div>
   )
 }

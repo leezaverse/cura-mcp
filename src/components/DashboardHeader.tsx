@@ -3,10 +3,17 @@ import type { UserProfile } from '../types'
 
 interface DashboardHeaderProps {
   user: UserProfile
+  currentPage: 'chat' | 'history'
+  setCurrentPage: (page: 'chat' | 'history') => void
   onLogout: () => void
 }
 
-export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout }) => {
+export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
+  user, 
+  currentPage, 
+  setCurrentPage, 
+  onLogout 
+}) => {
   return (
     <header className="dashboard-header">
       <div className="header-left">
@@ -18,11 +25,26 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, onLogout
           API Connected
         </div>
       </div>
+
+      <nav className="header-nav">
+        <button 
+          className={`nav-item ${currentPage === 'chat' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('chat')}
+        >
+          <span>💬</span> Chat Workspace
+        </button>
+        <button 
+          className={`nav-item ${currentPage === 'history' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('history')}
+        >
+          <span>📂</span> History Page
+        </button>
+      </nav>
       
       <div className="header-right">
         <div className="user-profile">
           {user.picture ? (
-            <img src={user.picture} alt={user.name} className="user-avatar" />
+            <img src={user.picture} alt={user.name} className="user-avatar" referrerPolicy="no-referrer" />
           ) : (
             <div className="user-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
               👤

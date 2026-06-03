@@ -11,6 +11,8 @@ interface ChatWorkspaceProps {
   error: string | null
   setError: (val: string | null) => void
   onSendPrompt: (e: React.FormEvent) => void
+  activeConversationId: string | null
+  onStartNewConversation: () => void
 }
 
 export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
@@ -22,6 +24,8 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
   error,
   setError,
   onSendPrompt,
+  activeConversationId,
+  onStartNewConversation,
 }) => {
   const chatHistoryEndRef = useRef<HTMLDivElement>(null)
 
@@ -33,6 +37,19 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
   return (
     <div className="workspace">
       <section className="chat-area">
+        <div className="chat-workspace-toolbar">
+          <div className="toolbar-left">
+            <span className="session-icon">📂</span>
+            <span className="session-label">Session:</span>
+            <span className="session-id" title={activeConversationId || ''}>
+              {activeConversationId ? activeConversationId : 'None'}
+            </span>
+          </div>
+          <button className="toolbar-new-chat-btn" onClick={onStartNewConversation}>
+            ＋ New Chat
+          </button>
+        </div>
+
         <div className="chat-history">
           {chatHistory.length === 0 ? (
             <div className="empty-state">
@@ -57,7 +74,7 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
                 {chat.response && (
                   <div className="message-row assistant">
                     <div className="message-bubble assistant">
-                      <div className="bubble-header">Gemini Slicer Core</div>
+                      <div className="bubble-header">AI response</div>
                       <MarkdownRenderer text={chat.response} />
                     </div>
                   </div>
