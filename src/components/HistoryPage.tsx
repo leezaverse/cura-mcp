@@ -82,7 +82,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         <div className="history-title-group">
           <h2 className="history-page-title">Conversation History</h2>
           <p className="history-page-desc">
-            Browse and resume your past interactions with the Cura MCP slicer engine.
+            Browse and resume your past interactions with the Cura MCP database engine.
           </p>
         </div>
         <button className="new-chat-history-btn" onClick={onStartNewConversation}>

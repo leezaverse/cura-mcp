@@ -56,7 +56,7 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
               <div className="empty-icon">💬</div>
               <h3 className="empty-title">Start a new conversation</h3>
               <p className="empty-desc">
-                Type a command below to communicate with the Cura MCP backend. You can ask for print profiles, print settings, or slicing calculations.
+                Type a command below to search clinical cohorts, analyze patient eligibility, or retrieve research data using natural language.
               </p>
             </div>
           ) : (
@@ -87,10 +87,10 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
           {loading && (
             <div className="message-row assistant">
               <div className="message-bubble assistant" style={{ background: 'rgba(139, 92, 246, 0.05)', borderColor: 'rgba(139, 92, 246, 0.2)' }}>
-                <div className="bubble-header">Executing Slicer Pipeline</div>
+                <div className="bubble-header">Executing Clinical Search Query</div>
                 <div className="loading-row">
                   <div className="pulse-spinner"></div>
-                  <span>Processing prompt and building Cura output...</span>
+                  <span>Processing prompt and fetching clinical data...</span>
                 </div>
               </div>
             </div>
@@ -112,7 +112,7 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
           <form className="chat-input-form" onSubmit={onSendPrompt}>
             <textarea
               className="chat-input"
-              placeholder="Ask Cura MCP... (e.g. Set bed temperature to 60°C)"
+              placeholder="Ask Cura MCP... (e.g. Find all female patients over 50 diagnosed with type 2 diabetes)"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {

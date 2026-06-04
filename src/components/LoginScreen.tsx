@@ -21,9 +21,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <span className="logo-icon">🔮</span>
         </div>
         
-        <h1 className="landing-title">Cura MCP Studio</h1>
+        <h1 className="landing-title">Cura MCP</h1>
         <p className="landing-subtitle">
-          Slices, configures, and controls Ultimaker Cura using natural language commands powered by AI.
+          AI-assisted clinical retrieval system that combines natural language interaction with schema-aware database querying.
         </p>
 
         <div className="google-btn-wrapper">

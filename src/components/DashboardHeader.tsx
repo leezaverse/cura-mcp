@@ -18,7 +18,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     <header className="dashboard-header">
       <div className="header-left">
         <div className="app-logo">
-          <span>🔮</span> Cura MCP Studio
+          <span>🔮</span> Cura MCP
         </div>
         <div className="status-badge">
           <span className="status-dot"></span>

@@ -144,7 +144,7 @@ function App() {
     setError(null)
   }
 
-  // Slicer API prompt sender handler
+  // Database API prompt sender handler
   const handleSendPrompt = async (e: React.FormEvent) => {
     e.preventDefault()
     
